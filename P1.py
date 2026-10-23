@@ -144,9 +144,9 @@ def proceso_completo(radio: int, notch: int, imagen: str, guardar_todo: bool, ob
     if guardar_todo:
         aux.guardar(array_imagen, False, "imagen_ruido.jpg", experimento)
         aux.guardar(trans, True, "trans_pre.jpg", experimento)
-        aux.guardar(H, True, "trans_post.jpg", experimento)
+        aux.guardar(H, True, "mascara.jpg", experimento)
+        aux.guardar(G, True, "trans_post.jpg", experimento)
         aux.guardar(g, False, "sin_ruido.jpg", experimento)
-
     return g
 
 
