@@ -55,6 +55,12 @@ def crear_coords(espectro: np.array):
 
 
 def calculo_distancias(punto: tuple, matriz_distancias_x: np.array, matriz_distancias_y: np.array) -> tuple:
+    """
+    Aprovechando la simetría del espectro, calcula las dos distancias simétricas entre el 
+    punto de entrada y el origen dado por las dos matrices de distancia (en x e y respectivamente).
+    Retorna ambas distancias
+    """
+
     u_0, v_0 = punto
 
     distancia_1 = np.sqrt((matriz_distancias_x - u_0) **
@@ -65,6 +71,11 @@ def calculo_distancias(punto: tuple, matriz_distancias_x: np.array, matriz_dista
 
 
 def obtener_H(puntos: list[tuple], matriz_distancias_x: np.array, matriz_distancias_y: np.array, radio: int, notch: int) -> np.array:
+    """
+    Recibe la lista de puntos para eliminar el ruido, las matrices de distancia x e y, el radio de eliminación 
+    y el notch deseado (1 para corte limpio, 2 para Gaussiano).
+    Retorna la matriz H
+    """
     if notch not in (1, 2):
         raise ValueError("Se espera notch 1 o 2")
     H = np.ones(aux.obtener_tamaño_imagen(matriz_distancias_x))
@@ -83,10 +94,17 @@ def obtener_H(puntos: list[tuple], matriz_distancias_x: np.array, matriz_distanc
 
 
 def aplicar_H(espectro: np.array, H: np.array) -> np.array:
+    """
+    Realiza la convolución entre F y H. Retorna G
+    """
     return espectro * H
 
 
 def regresar_a_espacio(G: np.array) -> np.array:
+    """
+    Recibe la matriz G = F*H. Hace Unshift, luego la devuelve al dominio del espacio y 
+    asegura que solo tenga componentes reales. retorna g_padded
+    """
     unshift = np.fft.ifftshift(G)
     espacial = np.fft.ifft2(unshift)
     g = np.real(espacial)
@@ -94,6 +112,10 @@ def regresar_a_espacio(G: np.array) -> np.array:
 
 
 def unpadding(imagen_espacial: np.array, bordes: tuple) -> np.array:
+    """
+    recorta el padding hecho en la función padding. Recibe la imagen y una tupla con los bordes.
+    Retorna la imagen con el tamaño original
+    """
     arriba, derecha, abajo, izquierda = bordes
     alto, ancho = aux.obtener_tamaño_imagen(imagen_espacial)
     imagen_terminada = imagen_espacial[arriba:(
@@ -103,25 +125,46 @@ def unpadding(imagen_espacial: np.array, bordes: tuple) -> np.array:
     return imagen_terminada
 
 
-def proceso_completo(radio: int, notch: int, imagen: str, objetivo_padding: int, lista_puntos: list[tuple]) -> np.array:
+def proceso_completo(radio: int, notch: int, imagen: str, guardar_todo: bool, objetivo_padding: int, lista_puntos: list[tuple], experimento: str = None) -> np.array:
+    """
+    Realiza todo el proceso necesario para tratar de eliminar el ruido, 
+    para simplificar llamadas en iteraciones.
+    retorna la imagen final g, que es a la que ya se le quitó el ruido y se le realizó el recorte.
+    """
     array_imagen = aux.cargar_imagen(imagen)
-    imagen_padded, pads = padding(array_imagen, "period", L)
+    imagen_padded, pads = padding(array_imagen, "period", objetivo_padding)
+
     trans = aplicar_fft(imagen_padded)
+
     U, V = crear_coords(trans)
-    H = obtener_H(lista_puntos, U, V, r, notch)
+    H = obtener_H(lista_puntos, U, V, radio, notch)
     G = aplicar_H(trans, H)
     g_padded = regresar_a_espacio(G)
     g = unpadding(g_padded, pads)
+    if guardar_todo:
+        aux.guardar(array_imagen, False, "imagen_ruido.jpg", experimento)
+        aux.guardar(trans, True, "trans_pre.jpg", experimento)
+        aux.guardar(H, True, "trans_post.jpg", experimento)
+        aux.guardar(g, False, "sin_ruido.jpg", experimento)
+
     return g
 
 
+# Segmento de pruebas
 if __name__ == "__main__":
-    r = 1
-    notch = 2
-    imagen = "cameraman.jpg"
-    lista_puntos = [(0, 21), (0, 47), (0, 74), (0, 82), (0, 118),
-                    (0, 135), (0, 145), (0, 185), (0, 204), (0, 223), (0, 234)]
-    L = 512
+    r = 100  # Radio de los círculos cortados en obtener_H
+    notch = 2  # 1 para cortes limpios. 2 para notch Gaussiano
+    imagen = "P1.CR2"  # imagen de prueba entregada con la tarea
+    guardar_todo = True
+    experimento = "testP1"
 
-    g = proceso_completo(r, notch, imagen, L, lista_puntos)
-    aux.visualizar(g)
+    # Puntos con fallos visibles en el espectro de Fourier
+    lista_puntos = [
+        (140*10, 0), (140*11, 0), (140*12, 0), (140 * 13, 0),
+        (140*14, 0), (140*15, 0), (140*16, 0)
+    ]
+
+    L = 4096  # Tamaño objetivo del padding
+
+    g = proceso_completo(r, notch, imagen, guardar_todo,
+                         L, lista_puntos, experimento)
