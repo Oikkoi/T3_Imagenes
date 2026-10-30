@@ -40,9 +40,9 @@ def guardar(img: np.array, compleja: bool, nombre_archivo: str, nombre_experimen
     el nombre del archivo (Importante: con su extensión!) y el nombre del experimento en proceso (para nombrar la carpeta)
     """
     ruta = os.path.join(os.path.dirname(__file__),
-                        f"Resultados_{nombre_experimento}")
+                        "Resultados", nombre_experimento)
     file_name = os.path.join(ruta, nombre_archivo)
-    os.makedirs(f"Resultados_{nombre_experimento}", exist_ok=True)
+    os.makedirs(ruta, exist_ok=True)
     if compleja:
         img = np.log(1 + np.abs(img))
     img = np.clip(np.divide(img, np.max(img)), 0, 1)

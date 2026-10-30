@@ -125,14 +125,14 @@ def unpadding(imagen_espacial: np.array, bordes: tuple) -> np.array:
     return imagen_terminada
 
 
-def proceso_completo(radio: int, notch: int, imagen: str, guardar_todo: bool, objetivo_padding: int, lista_puntos: list[tuple], experimento: str = None) -> np.array:
+def proceso_completo(radio: int, notch: int, imagen: str, guardar_todo: bool, objetivo_padding: int, lista_puntos: list[tuple], experimento: str = None, modo_pad: str = "period") -> np.array:
     """
     Realiza todo el proceso necesario para tratar de eliminar el ruido, 
     para simplificar llamadas en iteraciones.
     retorna la imagen final g, que es a la que ya se le quitó el ruido y se le realizó el recorte.
     """
     array_imagen = aux.cargar_imagen(imagen)
-    imagen_padded, pads = padding(array_imagen, "period", objetivo_padding)
+    imagen_padded, pads = padding(array_imagen, modo_pad, objetivo_padding)
 
     trans = aplicar_fft(imagen_padded)
 
