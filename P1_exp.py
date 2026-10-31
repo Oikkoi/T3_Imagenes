@@ -13,7 +13,7 @@ def exp1():
 
     # Puntos con fallos visibles en el espectro de Fourier
     lista_puntos = [
-        (-306, -306), (306, -306), (1094, 0), (1094+260*1, 0),
+        (1094, 0), (1094+260*1, 0),
         (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
     ]
 
@@ -40,7 +40,7 @@ def exp2(rs: tuple, notchs: tuple):
 
             # Puntos con fallos visibles en el espectro de Fourier
             lista_puntos = [
-                (-306, -306), (306, -306), (1094, 0), (1094+260*1, 0),
+                (1094, 0), (1094+260*1, 0),
                 (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
             ]
 
@@ -75,12 +75,32 @@ punto_dulce_2 = 38
 r_dulce_1 = 46
 
 
+def comparar_ideales():
+    imagen = "P1.CR2"
+    experimento = os.path.join("2", "comparacion_puntos_dulces")
+    L = 4096
+    lista_puntos = [
+        (1094, 0), (1094+260*1, 0),
+        (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
+    ]
+    g_ideal = proceso_completo(
+        46, 1, imagen, False, L, lista_puntos, experimento)
+
+    g_gauss = proceso_completo(
+        38, 2, imagen, False, L, lista_puntos, experimento)
+    diferencia = np.abs(g_ideal.astype(float) - g_gauss.astype(float))
+    aux.guardar(diferencia, False,
+                "diferencia_ideal_vs_gauss.jpg", experimento)
+
+# comparar_ideales()
+
+
 def exp3():
     Ls = (2256, 4096, 8192)
-    modos = ("zero", "period")
+    modos = (None, "period")
     imagen = "P1.CR2"
     lista_puntos = [
-        (-306, -306), (306, -306), (1094, 0), (1094+260*1, 0),
+        (1094, 0), (1094+260*1, 0),
         (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
     ]
     for notch in (1, 2):
@@ -89,11 +109,64 @@ def exp3():
         else:
             r = 38
         for modo in modos:
+            if modo == None:
+                nombre = "None"
+            else:
+                nombre = modo
             for L in Ls:
                 experimento = os.path.join(
-                    "3", f"notch_{str(notch)}", modo, str(L))
+                    "3", f"notch_{str(notch)}", nombre, str(L))
                 proceso_completo(r, notch, imagen, True, L,
                                  lista_puntos, experimento, modo)
 
 
-exp3()
+# exp3()
+
+
+def comparar_padding():
+    imagen = "P1.CR2"
+    experimento = os.path.join("3", "comparacion_padding")
+    L = 4096
+    notch = 2
+    r = 38
+
+    lista_puntos = [
+        (1094, 0), (1094+260*1, 0),
+        (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
+    ]
+    g_zero = proceso_completo(r, notch, imagen, False,
+                              L, lista_puntos, experimento, modo_pad="zero")
+    g_period = proceso_completo(
+        r, notch, imagen, False, L, lista_puntos, experimento, modo_pad="period")
+    diferencia = np.abs(g_zero.astype(float) -
+                        g_period.astype(float)).astype(np.uint8)
+    aux.guardar(diferencia, False, "zero_vs_period.jpg", experimento)
+    return
+
+
+# comparar_padding()
+
+def exp4():
+    imagen = "P1.CR2"
+    experimento = "4"
+    L = 4096
+    notch = 2
+    r = 38
+
+    lista_puntos = [
+        (1094, 0), (1094+260*1, 0),
+        (1094+260*2, 0), (1094+260*3, 0), (1094+260*4, 0)
+    ]
+
+    g_ideal = proceso_completo(
+        r, notch, imagen, False, L, lista_puntos, experimento, modo_pad="period")
+    array_imagen_original = aux.cargar_imagen(imagen)
+
+    diferencia = np.abs((array_imagen_original * 255).astype(float) -
+                        g_ideal.astype(float)).astype(np.uint8)
+
+    aux.guardar(diferencia, False, "og_vs_final.jpg", experimento)
+    print("Listo. Imagen diferencia del exp4 guardada.")
+
+
+exp4()

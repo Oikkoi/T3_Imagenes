@@ -4,13 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def padding(img: np.array, mode: str, L: int) -> np.array:
+def padding(img: np.array, mode: str | None, L: int) -> np.array:
     """
     mode: Tipo de padding. 'zero' para rellenar con 0. 
     'reflect' para que se refleje desde el borde. 'edge' para repetir el valor del borde.
     L es un int que se refiere al tamaño objetivo de la imagen,
     """
     alto, ancho = aux.obtener_tamaño_imagen(img)
+    if mode == None:
+        return img.copy(), (0, L, L, 0)
     pad_y_total = max(0, L - alto)
     pad_x_total = max(0, L - ancho)
 
@@ -111,17 +113,21 @@ def regresar_a_espacio(G: np.array) -> np.array:
     return g
 
 
-def unpadding(imagen_espacial: np.array, bordes: tuple) -> np.array:
+def unpadding(imagen_espacial: np.array, bordes: tuple, mode=1) -> np.array:
     """
     recorta el padding hecho en la función padding. Recibe la imagen y una tupla con los bordes.
     Retorna la imagen con el tamaño original
     """
+    if mode == None:
+        imagen_terminada = np.clip(
+            imagen_espacial * 255, 0, 255).astype("uint8")
+        return imagen_terminada
+
     arriba, derecha, abajo, izquierda = bordes
     alto, ancho = aux.obtener_tamaño_imagen(imagen_espacial)
     imagen_terminada = imagen_espacial[arriba:(
         alto - abajo), izquierda:(ancho - derecha)]
-    imagen_terminada = np.clip(imagen_terminada*255, 0, 255)
-    imagen_terminada = imagen_terminada.astype("uint8")
+    imagen_terminada = np.clip(imagen_terminada * 255, 0, 255).astype("uint8")
     return imagen_terminada
 
 
@@ -140,13 +146,23 @@ def proceso_completo(radio: int, notch: int, imagen: str, guardar_todo: bool, ob
     H = obtener_H(lista_puntos, U, V, radio, notch)
     G = aplicar_H(trans, H)
     g_padded = regresar_a_espacio(G)
-    g = unpadding(g_padded, pads)
+    g = unpadding(g_padded, pads, modo_pad)
     if guardar_todo:
         aux.guardar(array_imagen, False, "imagen_ruido.jpg", experimento)
         aux.guardar(trans, True, "trans_pre.jpg", experimento)
         aux.guardar(H, True, "mascara.jpg", experimento)
         aux.guardar(G, True, "trans_post.jpg", experimento)
         aux.guardar(g, False, "sin_ruido.jpg", experimento)
+
+    # Segmento para la quinta pregunta:
+    """
+    alto, ancho = trans.shape
+    col = (ancho // 2) + 1400
+    row = (alto // 2) + 0
+    print(f"F(u,v) antes: {trans[row, col]:.2f}")
+    print(f"H(u,v) aplicado: {H[row, col]}")
+    print(f"G(u,v) después: {G[row, col]:.2f}")
+    """
     return g
 
 
